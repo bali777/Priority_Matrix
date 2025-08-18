@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../app/theme.dart';
 import '../../../core/models/task.dart';
 
 class TaskTile extends StatelessWidget {
@@ -68,7 +67,7 @@ class TaskTile extends StatelessWidget {
           ),
           // Reorder handle (within list)
           reorderHandleBuilder(
-            Icon(Icons.drag_handle, size: 22, color: Colors.white54),
+            const Icon(Icons.drag_handle, size: 22, color: Colors.white54),
           ),
         ],
       ),
