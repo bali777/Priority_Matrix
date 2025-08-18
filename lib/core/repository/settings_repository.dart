@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart'; // for ValueListenable
 import 'package:hive_flutter/hive_flutter.dart';
 
 abstract class ISettingsRepository {
@@ -21,17 +22,15 @@ class HiveSettingsRepository implements ISettingsRepository {
   bool getHideCompleted() => (_box.get(hideCompletedKey) as bool?) ?? false;
 
   @override
-  Future<void> setHideCompleted(bool value) async {
-    await _box.put(hideCompletedKey, value);
-  }
+  Future<void> setHideCompleted(bool value) async =>
+      _box.put(hideCompletedKey, value);
 
   @override
   bool getInboxCollapsed() => (_box.get(inboxCollapsedKey) as bool?) ?? false;
 
   @override
-  Future<void> setInboxCollapsed(bool value) async {
-    await _box.put(inboxCollapsedKey, value);
-  }
+  Future<void> setInboxCollapsed(bool value) async =>
+      _box.put(inboxCollapsedKey, value);
 
   @override
   ValueListenable<Box> listenable() => _box.listenable();
