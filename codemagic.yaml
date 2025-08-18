@@ -1,0 +1,29 @@
+workflows:
+  android_debug:
+    name: Android Debug APK
+    environment:
+      flutter: stable
+    max_build_duration: 60
+    scripts:
+      - flutter --version
+      - flutter pub get
+      - dart run flutter_launcher_icons
+      - dart run flutter_native_splash:create
+      - flutter analyze
+      - flutter build apk --debug
+    artifacts:
+      - build/app/outputs/flutter-apk/app-debug.apk
+
+  android_release_unsigned:
+    name: Android Release APK (unsigned)
+    environment:
+      flutter: stable
+    max_build_duration: 60
+    scripts:
+      - flutter pub get
+      - dart run flutter_launcher_icons
+      - dart run flutter_native_splash:create
+      - flutter analyze
+      - flutter build apk --release
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
