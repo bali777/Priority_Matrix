@@ -98,3 +98,195 @@ class AppController extends StateNotifier<AppState> {
         inboxCollapsed: _settingsRepo.getInboxCollapsed(),
       );
     }
+
+    sl.addListener(settingsListener);
+    _removeSettingsListener = () => sl.removeListener(settingsListener);
+  }
+
+  @override
+  void dispose() {
+    _removeTasksListener?.call();
+    _removeSettingsListener?.call();
+    super.dispose();
+  }
+
+  // Utilities
+  List<Task> _sortAll(List<Task> tasks) {
+    final copy = [...tasks];
+    copy.sort((a, b) {
+      if (a.listId.index != b.listId.index) {
+        return a.listId.index.compareTo(b.listId.index);
+      }
+      return a.sortIndex.compareTo(b.sortIndex);
+    });
+    return copy;
+  }
+
+  List<Task> tasksFor(ListId listId, {bool onlyVisible = false}) {
+    final items = state.tasks.where((t) => t.listId == listId).toList()
+      ..sort((a, b) => a.sortIndex.compareTo(b.sortIndex));
+    if (onlyVisible && state.hideCompleted) {
+      return items.where((t) => !t.isCompleted).toList();
+    }
+    return items;
+  }
+
+  // History helpers
+  void _pushHistory() {
+    final snapshot = _Snapshot(
+      state.tasks.map((t) => t).toList(),
+      state.hideCompleted,
+      state.inboxCollapsed,
+    );
+    _undoStack.add(snapshot);
+    if (_undoStack.length > _historyLimit) {
+      _undoStack.removeAt(0);
+    }
+    _redoStack.clear();
+  }
+
+  Future<void> _applySnapshot(_Snapshot snap) async {
+    _applyingSnapshot = true;
+    try {
+      await _tasksRepo.replaceAll(snap.tasks);
+      await _settingsRepo.setHideCompleted(snap.hideCompleted);
+      await _settingsRepo.setInboxCollapsed(snap.inboxCollapsed);
+      state = state.copyWith(
+        tasks: _sortAll(snap.tasks),
+        hideCompleted: snap.hideCompleted,
+        inboxCollapsed: snap.inboxCollapsed,
+      );
+    } finally {
+      _applyingSnapshot = false;
+    }
+  }
+
+  Future<void> undo() async {
+    if (_undoStack.isEmpty) return;
+    final current = _Snapshot(
+      state.tasks.map((t) => t).toList(),
+      state.hideCompleted,
+      state.inboxCollapsed,
+    );
+    final snap = _undoStack.removeLast();
+    _redoStack.add(current);
+    await _applySnapshot(snap);
+    HapticFeedback.selectionClick();
+  }
+
+  Future<void> redo() async {
+    if (_redoStack.isEmpty) return;
+    final current = _Snapshot(
+      state.tasks.map((t) => t).toList(),
+      state.hideCompleted,
+      state.inboxCollapsed,
+    );
+    final snap = _redoStack.removeLast();
+    _undoStack.add(current);
+    await _applySnapshot(snap);
+    HapticFeedback.selectionClick();
+  }
+
+  // Actions
+  Future<void> addTask(String title) async {
+    if (title.trim().isEmpty) return;
+    _pushHistory();
+    final now = DateTime.now();
+    final newSort = tasksFor(ListId.inbox).length;
+    final task = Task(
+      id: const Uuid().v4(),
+      title: title.trim(),
+      listId: ListId.inbox,
+      sortIndex: newSort,
+      isCompleted: false,
+      createdAt: now,
+      updatedAt: now,
+    );
+    await _tasksRepo.create(task);
+  }
+
+  Future<void> deleteTask(String id) async {
+    _pushHistory();
+    await _tasksRepo.delete(id);
+  }
+
+  Future<void> toggleCompleted(String id) async {
+    _pushHistory();
+    final t = state.tasks.firstWhere((e) => e.id == id);
+    final updated = t.copyWith(
+      isCompleted: !t.isCompleted,
+      updatedAt: DateTime.now(),
+    );
+    await _tasksRepo.update(updated);
+  }
+
+  Future<void> moveTaskToList(
+    String id,
+    ListId listId, {
+    bool toTop = false,
+  }) async {
+    _pushHistory();
+    final now = DateTime.now();
+    final items = tasksFor(listId);
+    final newIndex = toTop ? 0 : items.length;
+
+    // Shift indices if inserting at top
+    if (toTop) {
+      for (final t in items) {
+        await _tasksRepo.update(
+          t.copyWith(sortIndex: t.sortIndex + 1, updatedAt: now),
+        );
+      }
+    }
+
+    final src = state.tasks.firstWhere((e) => e.id == id);
+    final moved = src.copyWith(
+      listId: listId,
+      sortIndex: newIndex,
+      updatedAt: now,
+    );
+    await _tasksRepo.update(moved);
+    HapticFeedback.lightImpact();
+  }
+
+  Future<void> reorderWithinList({
+    required ListId listId,
+    required int oldIndex,
+    required int newIndex,
+  }) async {
+    final visible = tasksFor(listId, onlyVisible: true);
+    if (visible.isEmpty) return;
+
+    if (newIndex > oldIndex) newIndex -= 1;
+
+    _pushHistory();
+
+    final moving = visible.removeAt(oldIndex);
+    visible.insert(newIndex, moving);
+
+    final hidden = state.hideCompleted
+        ? tasksFor(listId).where((t) => t.isCompleted).toList()
+        : <Task>[];
+
+    final combined = <Task>[...visible, ...hidden];
+
+    for (var i = 0; i < combined.length; i++) {
+      final t = combined[i];
+      if (t.sortIndex != i) {
+        await _tasksRepo.update(
+          t.copyWith(sortIndex: i, updatedAt: DateTime.now()),
+        );
+      }
+    }
+  }
+
+  Future<void> setHideCompleted(bool value) async {
+    _pushHistory();
+    await _settingsRepo.setHideCompleted(value);
+  }
+
+  Future<void> toggleInboxCollapsed() async {
+    _pushHistory();
+    await _settingsRepo.setInboxCollapsed(!state.inboxCollapsed);
+  }
+}
