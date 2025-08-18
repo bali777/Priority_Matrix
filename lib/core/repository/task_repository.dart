@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart'; // for ValueListenable
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/task.dart';
 
@@ -20,26 +21,20 @@ class HiveTaskRepository implements ITaskRepository {
     for (final key in _box.keys) {
       final raw = _box.get(key);
       if (raw is Map) {
-        tasks.add(Task.fromMap(Map<String, dynamic>.from(raw as Map)));
+        tasks.add(Task.fromMap(Map<String, dynamic>.from(raw)));
       }
     }
     return tasks;
   }
 
   @override
-  Future<void> create(Task task) async {
-    await _box.put(task.id, task.toMap());
-  }
+  Future<void> create(Task task) async => _box.put(task.id, task.toMap());
 
   @override
-  Future<void> update(Task task) async {
-    await _box.put(task.id, task.toMap());
-  }
+  Future<void> update(Task task) async => _box.put(task.id, task.toMap());
 
   @override
-  Future<void> delete(String id) async {
-    await _box.delete(id);
-  }
+  Future<void> delete(String id) async => _box.delete(id);
 
   @override
   Future<void> replaceAll(List<Task> tasks) async {
