@@ -24,7 +24,7 @@ ThemeData buildDarkTheme() {
       ),
       actionsIconTheme: const IconThemeData(color: Colors.white70),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: const Color(0xFF141414),
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -46,7 +46,7 @@ ThemeData buildDarkTheme() {
       backgroundColor: kElectricBlue,
       foregroundColor: Colors.white,
     ),
-    dialogTheme: const DialogTheme(
+    dialogTheme: const DialogThemeData(
       backgroundColor: Color(0xFF161616),
     ),
     listTileTheme: const ListTileThemeData(
