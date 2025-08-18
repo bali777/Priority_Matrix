@@ -252,8 +252,8 @@ class _QuadrantContainer extends ConsumerWidget {
     final tasks = ctr.tasksFor(listId, onlyVisible: app.hideCompleted);
 
     return DragTarget<String>(
-      onWillAccept: (_) => true,
-      onAccept: (taskId) => ctr.moveTaskToList(taskId, listId),
+      onWillAcceptWithDetails: (details) => true,
+      onAcceptWithDetails: (details) => ctr.moveTaskToList(details.data, listId),
       builder: (context, candidate, rejected) {
         final highlight = candidate.isNotEmpty;
         return AnimatedContainer(
@@ -356,8 +356,8 @@ class _InboxSection extends ConsumerWidget {
       height: 220,
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
       child: DragTarget<String>(
-        onWillAccept: (_) => true,
-        onAccept: (taskId) => ctr.moveTaskToList(taskId, ListId.inbox),
+        onWillAcceptWithDetails: (details) => true,
+        onAcceptWithDetails: (details) => ctr.moveTaskToList(details.data, ListId.inbox),
         builder: (context, candidate, rejected) {
           final highlight = candidate.isNotEmpty;
           return AnimatedContainer(
