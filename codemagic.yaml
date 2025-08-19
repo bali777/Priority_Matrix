@@ -3,9 +3,9 @@ workflows:
     name: Android Debug APK
     environment:
       flutter: stable
-    max_build_duration: 60
     scripts:
       - flutter --version
+      - flutter clean
       - flutter pub get
       - dart run flutter_launcher_icons
       - dart run flutter_native_splash:create
@@ -18,8 +18,8 @@ workflows:
     name: Android Release APK (unsigned)
     environment:
       flutter: stable
-    max_build_duration: 60
     scripts:
+      - flutter clean
       - flutter pub get
       - dart run flutter_launcher_icons
       - dart run flutter_native_splash:create
